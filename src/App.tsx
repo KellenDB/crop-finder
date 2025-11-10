@@ -1,86 +1,150 @@
-import React, { useState, useMemo } from 'react';
-import Header from './components/Header';
-import MapView from './components/MapView';
-import FieldInfoPanel from './components/FieldInfoPanel';
+import { useState, useMemo } from 'react';
+import MobileFrame from './components/layout/MobileFrame';
+import BottomPanel from './components/layout/BottomPanel';
+import MapView from './components/map/MapView';
+import TopBar from './components/navigation/TopBar';
+import SearchBar from './components/navigation/SearchBar';
+import LayerToggle from './components/navigation/LayerToggle';
+import LayerDropdown from './components/navigation/LayerDropdown';
+import SlideOutMenu from './components/navigation/SlideOutMenu';
+import FieldCard from './components/field/FieldCard';
 import { mockCropData } from './data/cropData';
-import { CropProperties, Coordinates } from './types';
+import { CropProperties, Coordinates, MapViewType, LayerSettings } from './types';
 import './styles/index.css';
 
 function App() {
-  const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [selectedField, setSelectedField] = useState<CropProperties | null>(null);
+  // State
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>('field-001');
+  const [savedFields, setSavedFields] = useState<string[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showOnlySaved, setShowOnlySaved] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [mapView, setMapView] = useState<MapViewType>('standard');
+  const [layerSettings, setLayerSettings] = useState<LayerSettings>({
+    cropFields: true
+  });
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter crop data based on search query
+  // Filter crop data based on search query and saved filter
   const filteredCropData = useMemo(() => {
-    if (!searchQuery) return mockCropData;
+    let filtered = mockCropData.features;
 
-    const query = searchQuery.toLowerCase();
-    const filteredFeatures = mockCropData.features.filter(feature => {
-      const props = feature.properties;
-      return (
-        props.crop.toLowerCase().includes(query) ||
-        props.name.toLowerCase().includes(query) ||
-        props.location.toLowerCase().includes(query) ||
-        (props.variety && props.variety.toLowerCase().includes(query))
-      );
-    });
+    // Filter by saved fields if enabled
+    if (showOnlySaved) {
+      filtered = filtered.filter(feature => savedFields.includes(feature.properties.id));
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(feature => {
+        const props = feature.properties;
+        return (
+          props.crop.toLowerCase().includes(query) ||
+          props.name.toLowerCase().includes(query) ||
+          props.location.toLowerCase().includes(query) ||
+          props.variety.toLowerCase().includes(query)
+        );
+      });
+    }
 
     return {
       ...mockCropData,
-      features: filteredFeatures
+      features: filtered
     };
-  }, [searchQuery]);
+  }, [searchQuery, showOnlySaved, savedFields]);
 
-  // Add dark mode class to html element
-  React.useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  // Get selected field data
+  const selectedField = mockCropData.features.find(
+    f => f.properties.id === selectedFieldId
+  )?.properties || null;
+
+  // Handlers
+  const handleFieldSelect = (field: CropProperties) => {
+    setSelectedFieldId(field.id);
+  };
+
+  const handleToggleSave = (fieldId: string) => {
+    setSavedFields(prev => 
+      prev.includes(fieldId) 
+        ? prev.filter(id => id !== fieldId)
+        : [...prev, fieldId]
+    );
+  };
+
+  const handleLayerToggle = (layer: keyof LayerSettings) => {
+    setLayerSettings(prev => ({
+      ...prev,
+      [layer]: !prev[layer]
+    }));
+  };
+
+  const handleMyFarmClick = () => {
+    setShowOnlySaved(!showOnlySaved);
+  };
 
   return (
-    <div className={`h-screen w-screen ${darkMode ? 'dark' : ''}`}>
-      <Header
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        fieldCount={filteredCropData.features.length}
-        currentLocation="Riverside, California"
-      />
-
+    <MobileFrame>
+      {/* Map */}
       <MapView
         cropData={filteredCropData}
-        darkMode={darkMode}
-        onFieldSelect={setSelectedField}
+        onFieldSelect={handleFieldSelect}
         userLocation={userLocation}
         setUserLocation={setUserLocation}
+        mapView={mapView}
+        showCropFields={layerSettings.cropFields}
       />
 
-      <FieldInfoPanel
-        field={selectedField}
-        darkMode={darkMode}
-        onClose={() => setSelectedField(null)}
+      {/* Top Navigation */}
+      <TopBar onMenuClick={() => setMenuOpen(true)} />
+      
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
       />
 
-      {/* Loading/Permission Message */}
-      {!userLocation && (
-        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 ${
-          darkMode ? 'bg-gray-900' : 'bg-white'
-        } p-6 rounded-lg shadow-xl text-center fade-in max-w-sm`}>
-          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-            📍 Allow location access to see crops near you
-          </p>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            You can still explore the map without location services
-          </p>
-        </div>
-      )}
-    </div>
+      <LayerToggle 
+        onClick={() => setLayersOpen(!layersOpen)}
+        isOpen={layersOpen}
+      />
+
+      <LayerDropdown
+        isOpen={layersOpen}
+        mapView={mapView}
+        layerSettings={layerSettings}
+        onMapViewChange={setMapView}
+        onLayerToggle={handleLayerToggle}
+        onClose={() => setLayersOpen(false)}
+      />
+
+      {/* Slide Out Menu */}
+      <SlideOutMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        savedFields={savedFields}
+        cropFields={mockCropData.features.map(f => f.properties)}
+        onFieldSelect={setSelectedFieldId}
+        onMyFarmClick={handleMyFarmClick}
+        showOnlySaved={showOnlySaved}
+      />
+
+      {/* Bottom Panel with Field Card */}
+      <BottomPanel 
+        regionLabel="Riverside, California"
+        fieldCount={filteredCropData.features.length}
+      >
+        {selectedField && (
+          <FieldCard
+            key={selectedField.id}
+            field={selectedField}
+            isSaved={savedFields.includes(selectedField.id)}
+            onToggleSave={handleToggleSave}
+            onClose={() => setSelectedFieldId(null)}
+          />
+        )}
+      </BottomPanel>
+    </MobileFrame>
   );
 }
 
