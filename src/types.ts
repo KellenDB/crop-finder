@@ -14,6 +14,8 @@ export interface CropProperties {
   fieldCode: string;
   color: string;
   lightColor: string;
+  cdl_code?: number;
+  planted: string;
 }
 
 export interface CropFeature {
