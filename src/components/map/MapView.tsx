@@ -173,7 +173,7 @@ export default function MapView({
           source: 'crop-fields',
           paint: {
             'fill-color': getCropColorExpression('fill'),
-            'fill-opacity': showCropFields ? 0.3 : 0
+            'fill-opacity': showCropFields ? 0.5 : 0
           }
         });
       }
@@ -185,7 +185,7 @@ export default function MapView({
           source: 'crop-fields',
           paint: {
             'line-color': getCropColorExpression('stroke'),
-            'line-width': 2,
+            'line-width': 3,
             'line-opacity': showCropFields ? 1 : 0
           }
         });

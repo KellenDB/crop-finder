@@ -8,7 +8,7 @@ import LayerToggle from './components/navigation/LayerToggle';
 import LayerDropdown from './components/navigation/LayerDropdown';
 import SlideOutMenu from './components/navigation/SlideOutMenu';
 import FieldCard from './components/field/FieldCard';
-import { mockCropData } from './data/cropData';
+import { cropData } from './data/bakersfieldData';
 import { CropProperties, Coordinates, MapViewType, LayerSettings } from './types';
 import './styles/index.css';
 
@@ -28,7 +28,7 @@ function App() {
 
   // Filter crop data based on search query and saved filter
   const filteredCropData = useMemo(() => {
-    let filtered = mockCropData.features;
+    let filtered = cropData.features;
 
     // Filter by saved fields if enabled
     if (showOnlySaved) {
@@ -42,21 +42,21 @@ function App() {
         const props = feature.properties;
         return (
           props.crop.toLowerCase().includes(query) ||
-          props.name.toLowerCase().includes(query) ||
+          props.variety.toLowerCase().includes(query) ||
           props.location.toLowerCase().includes(query) ||
-          props.variety.toLowerCase().includes(query)
+          (props.name?.toLowerCase().includes(query) ?? false)
         );
       });
     }
 
     return {
-      ...mockCropData,
+      ...cropData,
       features: filtered
     };
   }, [searchQuery, showOnlySaved, savedFields]);
 
   // Get selected field data
-  const selectedField = mockCropData.features.find(
+  const selectedField = cropData.features.find(
     f => f.properties.id === selectedFieldId
   )?.properties || null;
 
@@ -123,7 +123,7 @@ function App() {
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         savedFields={savedFields}
-        cropFields={mockCropData.features.map(f => f.properties)}
+        cropFields={cropData.features.map(f => f.properties)}
         onFieldSelect={setSelectedFieldId}
         onMyFarmClick={handleMyFarmClick}
         showOnlySaved={showOnlySaved}
@@ -131,7 +131,7 @@ function App() {
 
       {/* Bottom Panel with Field Card */}
       <BottomPanel 
-        regionLabel="Riverside, California"
+        regionLabel="Bakersfield, California"
         fieldCount={filteredCropData.features.length}
       >
         {selectedField && (

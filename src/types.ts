@@ -1,21 +1,30 @@
 export interface CropProperties {
+  // Core fields (required - from USDA CDL data)
   id: string;
-  name: string;
-  owner: string;
   crop: string;
+  emoji: string;
+  acres: string;
+  cdl_code: number;
+  
+  // Derived fields (required - we generate these from CDL data)
   variety: string;
   location: string;
-  emoji: string;
-  cropImage: string;
-  yearPlanted: number;
-  harvestCycle: 'Just Planted' | 'Growing' | 'Bud Break' | 'Ready to Harvest' | 'Harvested';
-  growthDuration: string;
-  acres: string;
-  fieldCode: string;
   color: string;
   lightColor: string;
-  cdl_code?: number;
-  planted: string;
+  growthDuration: string;
+  
+  // Geospatial data (optional - included in our extracts)
+  centroid_lon?: number;
+  centroid_lat?: number;
+  
+  // Aspirational fields (optional - future data sources)
+  name?: string;              // Future: Field/farm name from property records
+  owner?: string;             // Future: Owner from property records  
+  cropImage?: string;         // Future: Satellite/aerial imagery
+  yearPlanted?: number;       // Future: Historical planting data
+  harvestCycle?: 'Just Planted' | 'Growing' | 'Bud Break' | 'Ready to Harvest' | 'Harvested';  // Future: Real-time growth tracking
+  fieldCode?: string;         // Future: Official parcel/field IDs
+  planted?: string;           // Future: Planting date tracking
 }
 
 export interface CropFeature {
